@@ -1,0 +1,18 @@
+Token info 1.1.0 - Windows x64
+
+1. Pakk ut hele ZIP-filen til en mappe du vil beholde.
+2. Dobbeltklikk Token info.exe.
+3. Valgfritt: dobbeltklikk Lag skrivebordssnarvei.vbs.
+
+Codex må være installert og innlogget for å vise kontodata.
+Node, npm og en egen API-nøkkel er ikke nødvendig.
+Appen oppdateres automatisk med nye bruksdata mens den er åpen.
+Lukk vinduet for å avslutte, eller minimer for å fortsette.
+
+Programfilen er ikke kodesignert. Windows kan derfor vise en advarsel.
+Kontroller at filen kommer fra utgiverens GitHub-release.
+
+Lokale logger leses fra CODEX_HOME eller brukerens .codex-mappe.
+Ingen personlige logger eller innloggingsdata følger med pakken.
+Dette er et uavhengig prosjekt, ikke et offisielt OpenAI-produkt.
+Se resources/app/README.md for datakilder og begrensninger.

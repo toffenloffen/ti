@@ -1,0 +1,39 @@
+name: Build Windows release
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check release version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match package.json version.' }
+      - run: node --test
+      - name: Package Windows app
+        shell: pwsh
+        run: ./Build-Release.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: token-info-windows
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS.txt
+      - name: Create draft release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = @(Get-ChildItem dist/*.zip, dist/SHA256SUMS.txt | ForEach-Object FullName)
+          gh release create $env:GITHUB_REF_NAME @assets --verify-tag --draft --title "Token info $env:GITHUB_REF_NAME" --notes-file release/NOTES.md
