@@ -16,7 +16,7 @@ const account = new AccountClient();
 let snapshot, localUpdatedAt, localError = null, accountBusy = false;
 const accountState = { limits: [], usage: null, limitsUpdatedAt: null, usageUpdatedAt: null, limitsError: null, usageError: null };
 function refreshLocal() {
-  try { snapshot = local.scan(); localUpdatedAt = Date.now(); localError = null; }
+  try { snapshot = local.scan(Date.now(), options.getCustomProjects?.() || []); localUpdatedAt = Date.now(); localError = null; }
   catch { localError = 'Lokale data kunne ikke oppdateres. Prøver igjen automatisk.'; }
 }
 async function refreshAccount() {
@@ -56,6 +56,7 @@ const server = http.createServer((req,res)=>{
 const startedAt = Date.now();
 let timers = [];
 return {
+  refreshLocal,
   start() {
     return new Promise((resolve,reject)=>{
       server.once('error',reject);

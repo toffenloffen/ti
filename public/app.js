@@ -8,6 +8,31 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;',
 const windowLabel = n => n === 10080 ? 'Ukesgrense' : n === 300 ? '5-timersgrense' : n ? `${fmt(n / 60)} timer` : 'Ukjent periode';
 let data, source = 'account';
 let selectedDetail=null,detailSignature='';
+const projectBridge = window.tiProjects;
+let projectBusy = false;
+function showCustomProjects(rows) {
+  $('customProjects').innerHTML = rows.length ? rows.map(p=>`<div class="custom-project"><div><strong>${esc(p.name)}</strong><small>${esc(p.path)}</small></div><button type="button" data-remove-project="${esc(p.id)}" aria-label="Fjern ${esc(p.name)} fra TI">Fjern fra TI</button></div>`).join('') : '<p class="muted">Du har ikke lagt til egne mapper ennå.</p>';
+}
+async function projectAction(action, id) {
+  if (projectBusy || !projectBridge) return;
+  projectBusy = true; $('addProject').disabled = true;
+  $('projectMessage').textContent = '';
+  try {
+    const result = await projectBridge[action](id);
+    if (result.error) throw new Error(result.error);
+    showCustomProjects(result.projects);
+    if (action !== 'list') await update(false);
+  } catch(error) { $('projectMessage').textContent = error.message || 'Prosjektmapper kunne ikke oppdateres.'; }
+  finally { projectBusy = false; $('addProject').disabled = false; }
+}
+$('addProject').hidden = !projectBridge;
+$('manageProjects').hidden = !projectBridge;
+$('addProject').addEventListener('click',()=>projectAction('add'));
+$('customProjects').addEventListener('click',event=>{
+  const button=event.target.closest('[data-remove-project]');
+  if(button)projectAction('remove',button.dataset.removeProject);
+});
+if(projectBridge)projectAction('list');
 $('closeDetail').addEventListener('click',()=>$('detailDialog').close());
 $('detailDialog').addEventListener('close',()=>{selectedDetail=null;detailSignature='';});
 for(const name of ['projects','recent'])$(name).addEventListener('click',event=>{
@@ -97,7 +122,7 @@ function render() {
   renderLists();
   paint('models',ranks(l.models,'model'));
   $('limits').innerHTML=limits.length?limits.map(w=>{const expired=w.resetsAt&&w.resetsAt*1000<Date.now();return `<div class="limit-item"><div class="limit-top"><strong>${esc(w.name)}</strong><span>${expired?'Utdatert':w.remaining===null?'Ukjent':fmt(w.remaining)+' % igjen'}</span></div><div class="meter"><span style="width:${!expired?w.remaining||0:0}%"></span></div><p>${windowLabel(w.minutes)}${w.used!==null?' · '+fmt(w.used)+' % brukt':''}<br>${expired?'Sist kjente nullstilling':'Nullstilles'} ${time(w.resetsAt? w.resetsAt*1000:null)}${stale?'<br>Sist kjente verdi · kan være utdatert':''}</p></div>`;}).join(''):'<p class="empty">Kontogrenser er ikke tilgjengelige ennå. Programmet prøver igjen automatisk.</p>';
-  $('coverage').textContent=`${l.files} lokale loggfiler · ${fmt(l.responses)} unike tokenposter${l.earliest?' · fra '+time(l.earliest):''}. Bare registrerte Codex-prosjekter vises som prosjekter. Samtaler uten prosjekttilknytning vises under Nylige.`;
+  $('coverage').textContent=`${l.files} lokale Codex-loggfiler · ${fmt(l.responses)} unike tokenposter${l.earliest?' · fra '+time(l.earliest):''}. Prosjekter er registrert i Codex eller valgt i TI. Andre samtaler vises under Nylige. Claude CLI-logger leses ikke.`;
   $('warnings').textContent=l.warnings.join(' ');
   $('updated').textContent=`Siste lokale sjekk: ${time(data.localUpdatedAt)}. Siste tokenpost: ${time(l.latest)}.`;
   const errors=[data.localError,a.limitsError,a.usageError].filter(Boolean);
@@ -106,9 +131,9 @@ function render() {
   renderHistory();
   renderDetail();
 }
-async function update() {
+async function update(schedule = true) {
   try {const response=await fetch('/api/usage',{cache:'no-store'});if(!response.ok)throw new Error();data=await response.json();render();}
   catch {$('status').textContent='Forbindelsen er brutt';$('statusDot').classList.add('off');$('error').hidden=false;$('error').textContent='Programmet svarer ikke. Viste tall er sist hentede verdier. Start Token info igjen hvis det er stoppet.';}
-  finally {setTimeout(update,5000);}
+  finally {if(schedule)setTimeout(update,5000);}
 }
 update();

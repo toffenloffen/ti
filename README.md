@@ -16,11 +16,21 @@ Lukk med **X** for å avslutte appen og kontoforbindelsen. Minimer for å la ove
 
 Skrivebordsskallet inkluderer Node gjennom Electron 44.3.0. Electron ligger i `.runtime/electron`, hentet fra prosjektets offisielle GitHub-utgivelse og kontrollert med SHA-256. Kjør `Install-Desktop.ps1` for å gjenopprette runtime/snarvei ved behov. Codex må være installert og innlogget for kontodata. Ingen separat API-nøkkel er nødvendig, og programmet starter ingen modellforespørsler. Prosjektmappen må beholdes siden skrivebordssnarveien peker hit.
 
+## Egne prosjektmapper (kommende oppdatering)
+
+Klikk **Legg til prosjektmappe** under Prosjekter i skrivebordsappen. Velg en mappe du har brukt med Codex CLI. TI grupperer eksisterende lokale Codex-logger fra mappen, undermappene og tilknyttede Git-worktrees, og følger automatisk med på nye logger. Mapper uten bruksdata vises også. Det er ikke nødvendig å registrere prosjektet i Codex først.
+
+Valgene lagres bare i `%APPDATA%/Token info/projects.json`; Codex-metadata og prosjektfiler endres ikke. **Administrer egne mapper → Fjern fra TI** fjerner bare TI-valget. Historikken fordeles da tilbake til Codex-prosjekter eller Nylige. Ved overlapp vinner den mest spesifikke mappen, mens eksplisitt Codex-prosjekttilknytning har prioritet. Den samme rotmappen vises én gang hvis den finnes begge steder. Et bevisst mappevalg i TI kan samle samtaler som Codex har merket prosjektløse.
+
+**Datakilde:** Dette gjelder Codex-logger på denne PC-en, ikke filer inne i den valgte prosjektmappen. Claude CLI-logger importeres ikke ennå. Claude Code lagrer [egne JSONL-transkripter](https://code.claude.com/docs/en/sessions), og har [separate cache-felt som må legges til input](https://platform.claude.com/docs/en/build-with-claude/prompt-caching). Det krever en egen importør med deduplisering og validering av sesjoner/underagenter. Manuelle mapper løser dermed Codex-delen av [forespørsel #1](https://github.com/toffenloffen/ti/issues/1), ikke hele forespørselen.
+
+Mappevalg er tilgjengelig i Windows-appen. Utviklingsserveren i nettleseren beholder kun lesetilgang.
+
 ## Hva tallene betyr
 
 - **Tokens i dag:** Registrert input + output i lokale Codex-logger, gruppert etter `Europe/Oslo`. Input fra hurtigbuffer og resonnering er underkategorier og legges ikke til totalen igjen.
 - **Kontohistorikk og kontototal:** Hentes fra Codex-tjenesten. Historikken kan ligge etter, og manglende dager vises som «ikke rapportert». Kontoens dagstidssone er ikke dokumentert i responsen. Kontohistorikk blandes ikke med lokale dagstall.
-- **Prosjekter:** Bare faktisk registrerte Codex-prosjekter fra lokale metadata. Bruk knyttes til et registrert prosjekt via eksplisitt oppgavetilknytning, registrert rotmappe eller Git-worktree-metadata. Eksplisitt prosjektløse oppgaver blir ikke prosjekter. Registrerte prosjekter uten lokale bruksdata vises med «Ingen lokale bruksdata ennå». Listen viser alle, med søk og scrolling.
+- **Prosjekter:** Registrerte Codex-prosjekter fra lokale metadata og mapper brukeren eksplisitt har valgt i TI. Bruk knyttes til et registrert prosjekt via eksplisitt oppgavetilknytning, registrert rotmappe eller Git-worktree-metadata. Eksplisitt prosjektløse oppgaver blir bare gruppert som prosjekt når de matcher en mappe valgt i TI. Registrerte prosjekter uten lokale bruksdata vises med «Ingen lokale bruksdata ennå». Listen viser alle, med søk og scrolling.
 - **Nylige:** Samtaler uten registrert prosjekt, med tittel fra Codex sin lokale oppgaveindeks der den finnes. Underagenter samles med hovedoppgaven. Prosjekter + Nylige summerer til den samme lokale totalen. Ukjente mappenavn blir aldri egne prosjekter.
 - **Modeller:** Modellfordeling fra logger på denne PC-en. Flyttede/slettede logger, eldre aktivitet og andre PC-er kan mangle.
 - **Kontogrenser:** Hentes som prosent og nullstillingstidspunkt fra kontoen. Prosent omregnes aldri til tokens. Ved forbindelsesfeil beholdes sist kjente verdier med tidsstempel og varsel. Har programmet aldri hentet kontogrenser, kan det vise siste loggførte kvote, tydelig merket som historisk.
