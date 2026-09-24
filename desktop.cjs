@@ -26,7 +26,7 @@ else {
   app.whenReady().then(async()=>{
     const {LanguageSettings} = await import(pathToFileURL(path.join(__dirname,'language-settings.mjs')).href);
     const {translator} = await import(pathToFileURL(path.join(__dirname,'public','i18n.js')).href);
-    languageSettings = new LanguageSettings(path.join(app.getPath('userData'),'language.json'),app.getPreferredSystemLanguages());
+    languageSettings = new LanguageSettings(path.join(app.getPath('userData'),'language.json'));
     translate = translator(languageSettings.get());
     Menu.setApplicationMenu(null);
     session.defaultSession.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false));

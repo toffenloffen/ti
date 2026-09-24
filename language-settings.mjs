@@ -2,11 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { languages, resolveLanguage } from './public/i18n.js';
 export class LanguageSettings {
-  constructor(filename, preferred = []) { this.filename=filename; this.preferred=preferred; }
+  constructor(filename) { this.filename=filename; }
   get() {
     let value;
     try { value=JSON.parse(fs.readFileSync(this.filename,'utf8')).language; } catch {}
-    return resolveLanguage(value,this.preferred);
+    return resolveLanguage(value);
   }
   set(language) {
     if (!Object.hasOwn(languages,language)) throw new Error('languageInvalid');

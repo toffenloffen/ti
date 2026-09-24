@@ -1,13 +1,8 @@
 import { catalogs } from './translations.js';
 export { catalogs };
 export const languages = {nb:'Norsk bokmål',en:'English',sv:'Svenska',da:'Dansk',de:'Deutsch',fr:'Français',es:'Español'};
-export function resolveLanguage(saved, preferred = []) {
+export function resolveLanguage(saved) {
   if (Object.hasOwn(languages, saved)) return saved;
-  for (const value of preferred) {
-    const base = String(value).toLowerCase().split(/[-_]/)[0];
-    const code = base === 'no' || base === 'nn' ? 'nb' : base;
-    if (Object.hasOwn(languages, code)) return code;
-  }
   return 'en';
 }
 export function translator(language = 'en') {
@@ -24,9 +19,9 @@ export function formatting(language, zone = 'Europe/Oslo') {
     today: () => new Intl.DateTimeFormat(locale,{weekday:'long',day:'numeric',month:'long',timeZone:zone}).format(new Date())
   };
 }
-export function loadBrowserLanguage(storage, preferred) {
+export function loadBrowserLanguage(storage) {
   let saved; try { saved = storage?.getItem('ti.language'); } catch {}
-  return resolveLanguage(saved, preferred);
+  return resolveLanguage(saved);
 }
 export function saveBrowserLanguage(storage, language) {
   try { storage?.setItem('ti.language',resolveLanguage(language)); return true; } catch { return false; }

@@ -8,7 +8,7 @@ TI is an independent project, not an official OpenAI product. It currently reads
 
 ## Get started
 
-1. Download `Token-info-1.3.0-win-x64.zip` from Releases.
+1. Download `Token-info-1.3.1-win-x64.zip` from Releases.
 2. Extract the **entire** archive into a folder you want to keep.
 3. Open **Token info.exe**. No separate Node, npm or API key is needed.
 4. Optionally run **Create desktop shortcut.vbs** to create a desktop shortcut.
@@ -31,7 +31,7 @@ Choose a language from the selector at the top of the app:
 - French
 - Spanish
 
-On first launch, TI uses a supported system language, falling back to English. Your selection is saved in `%APPDATA%/Token info/language.json` and applies immediately to the dashboard, model details, folder controls and app-provided dialog text. Standard Windows file-picker controls follow Windows settings.
+On first launch, TI always starts in English, regardless of the system or browser language. Your selection is saved in `%APPDATA%/Token info/language.json` and applies immediately to the dashboard, model details, folder controls and app-provided dialog text. Standard Windows file-picker controls follow Windows settings.
 
 Dates and numbers follow the selected language. **Changing the language does not change the accounting time zone or move usage between days.** Local days use `Europe/Oslo` by default, configurable with `TOKEN_INFO_TIMEZONE`. Project names, conversation titles, model names and exact model IDs are preserved.
 

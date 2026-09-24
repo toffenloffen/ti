@@ -8,9 +8,10 @@ if (-not (Test-Path -LiteralPath $electron)) {
     Expand-Archive -LiteralPath $runtimeZip -DestinationPath (Join-Path $appRoot '.runtime\electron')
 }
 $runner = Join-Path $PSScriptRoot 'desktop-smoke.cjs'
-foreach ($phase in @('full','restart','account')) {
+foreach ($phase in @('full','restart','account','restart-nb')) {
     $arguments = '"' + $runner + '"'
     if ($phase -eq 'restart') { $arguments += ' --verify-restart' }
+    if ($phase -eq 'restart-nb') { $arguments += ' --verify-nb' }
     if ($phase -eq 'account') { $arguments += ' --account-data' }
     $process = Start-Process -FilePath $electron -ArgumentList $arguments -WindowStyle Hidden -PassThru
     if (-not $process.WaitForExit(60000)) { $process.Kill(); throw "Desktop smoke test timed out: $phase" }
