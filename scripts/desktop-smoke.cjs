@@ -1,12 +1,15 @@
 // Run with Electron: .runtime/electron/electron.exe scripts/desktop-smoke.cjs
 // This exercises the real preload, IPC, service and renderer with isolated data.
-const {app,dialog}=require('electron');
+const {app,dialog,BrowserWindow}=require('electron');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'..'),qa=path.join(root,'.runtime','locale-qa');
 fs.mkdirSync(path.join(qa,'appdata'),{recursive:true});fs.mkdirSync(path.join(qa,'home','sessions'),{recursive:true});
-const folder=path.join(qa,'Original project'),phase=process.argv.includes('--verify-restart')?'restart':process.argv.includes('--account-data')?'account':'full';fs.mkdirSync(folder,{recursive:true});
+const folder=path.join(qa,'Original project'),phase=process.argv.includes('--verify-nb')?'restart-nb':process.argv.includes('--verify-restart')?'restart':process.argv.includes('--account-data')?'account':'full';fs.mkdirSync(folder,{recursive:true});
 const settings=path.join(qa,'appdata','Token info','language.json');
-if(phase!=='restart'){fs.mkdirSync(path.dirname(settings),{recursive:true});fs.writeFileSync(settings,JSON.stringify({language:'en'}));}
+if(!phase.startsWith('restart'))fs.rmSync(settings,{force:true});
+const systemLanguage=phase==='account'?'de-DE':'nb-NO';
+app.commandLine.appendSwitch('lang',systemLanguage);
+app.getPreferredSystemLanguages=()=>[systemLanguage];
 fs.writeFileSync(path.join(qa,'home','sessions','example.jsonl'),[
  {type:'session_meta',payload:{id:'task1',cwd:folder,title:'Original conversation'}},
  {type:'token_usage_record',timestamp:'2026-09-24T10:00:00Z',payload:{thread_id:'task1',response_id:'response1',model:'original-model-id',usage:{input_tokens:123456,output_tokens:1100,cached_input_tokens:100000}}},
@@ -25,12 +28,18 @@ app.once('browser-window-created',(_event,win)=>{
    await wait("document.getElementById('language').options.length===7 && document.getElementById('localTotal').textContent!=='—'");
    if(phase==='account')await wait("document.getElementById('lifetime').textContent!=='—'");
    else await wait("!document.getElementById('error').hidden");
-   if(phase==='restart'){
-    assert.equal(await run('document.documentElement.lang'),'de');
+   if(phase.startsWith('restart')){
+    const expected=phase==='restart-nb'?'nb':'de';
+    assert.equal(await run('document.documentElement.lang'),expected);
     assert.match(await run("document.getElementById('projects').textContent"),/Original project/);
-    report.push('German language and custom project restored across process restart');
+    report.push(expected+': language and custom project restored across process restart');
    }else{
     assert.equal(await run('document.documentElement.lang'),'en');
+    assert.equal(fs.existsSync(settings),false);
+    await run('window.tiProjects.add()');
+    const {catalogs:initialCatalogs}=await import(require('node:url').pathToFileURL(path.join(root,'public','translations.js')).href);
+    assert.equal(chosenTitle,initialCatalogs.en.folderDialog);
+    report.push(systemLanguage+': fresh desktop and native dialog start in English without saving a default');
     await run("document.getElementById('addProject').click()");
     await wait("document.getElementById('projects').textContent.includes('Original project')");
     const {catalogs}=await import(require('node:url').pathToFileURL(path.join(root,'public','translations.js')).href);
@@ -70,6 +79,27 @@ app.once('browser-window-created',(_event,win)=>{
     await run("document.getElementById('projectSearch').value='NO_MATCH';document.getElementById('projectSearch').dispatchEvent(new Event('input'))");
     assert.equal(await run("document.getElementById('projects').textContent"),catalogs.de.noProjects);
     report.push('Open detail language refresh and localized empty search passed');
+    // A window without preload exercises the actual browser fallback independently.
+    const web=new BrowserWindow({show:false,webPreferences:{sandbox:true,contextIsolation:true}});
+    const webRun=script=>web.webContents.executeJavaScript(script);
+    const webWait=async script=>{for(let i=0;i<100;i++){if(await webRun(script))return;await pause(50);}throw new Error('Browser timeout: '+script);};
+    await web.loadURL(win.webContents.getURL());
+    await webRun("localStorage.removeItem('ti.language')");
+    await web.loadURL(win.webContents.getURL());
+    await webWait("document.getElementById('language').options.length===7");
+    assert.equal(await webRun('document.documentElement.lang'),'en');
+    assert.equal(await webRun("localStorage.getItem('ti.language')"),null);
+    const selected=phase==='account'?'nb':'de';
+    await webRun(`document.getElementById('language').value='${selected}';document.getElementById('language').dispatchEvent(new Event('change'))`);
+    await webWait(`document.documentElement.lang==='${selected}'`);
+    await web.loadURL(win.webContents.getURL());
+    await webWait(`document.documentElement.lang==='${selected}'`);
+    report.push(systemLanguage+': browser starts in English and preserves explicit '+selected+' after reload; navigator='+await webRun('navigator.language'));
+    web.destroy();
+    if(phase==='account'){
+     await run("document.getElementById('language').value='nb';document.getElementById('language').dispatchEvent(new Event('change'))");
+     await wait("document.documentElement.lang==='nb' && !document.getElementById('language').disabled");
+    }
    }
    fs.writeFileSync(path.join(qa,phase+'-report.json'),JSON.stringify({success:true,report},null,2));app.quit();
   }catch(error){fs.writeFileSync(path.join(qa,phase+'-report.json'),JSON.stringify({success:false,error:error.stack},null,2));app.exit(1);}

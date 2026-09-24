@@ -1,10 +1,10 @@
-Token info 1.3.0 - Windows x64
+Token info 1.3.1 - Windows x64
 
 1. Extract the entire ZIP archive into a folder you want to keep.
 2. Double-click Token info.exe.
 3. Optional: run Create desktop shortcut.vbs.
 
-Choose your language at the top of the app. English, Norwegian Bokmal,
+TI always starts in English on first launch. Choose your language at the top of the app. English, Norwegian Bokmal,
 Swedish, Danish, German, French and Spanish are included. Your choice is saved.
 
 Codex must be installed and signed in for account data. No separate Node,

@@ -3,7 +3,8 @@ import {languages,translator,formatting,localeFor,loadBrowserLanguage,saveBrowse
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let storage;try{storage=window.localStorage;}catch{}
-let language=loadBrowserLanguage(storage,navigator.languages||[navigator.language]);
+// Desktop settings and browser storage are independent; neither infers an OS preference.
+let language=window.tiLanguage?'en':loadBrowserLanguage(storage);
 try{if(window.tiLanguage)language=await window.tiLanguage.get();}catch{}
 let t=translator(language), f=formatting(language), data, source='account', selectedDetail=null, detailSignature='', customFolders=[], folderError=null, offline=false;
 const painted=new Map();

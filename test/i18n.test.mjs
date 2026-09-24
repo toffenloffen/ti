@@ -22,30 +22,36 @@ test('all seven catalogs contain every English key and the same interpolation fi
     for(const match of source.matchAll(/\bt\('([^']+)'/g))assert.ok(catalogs.en[match[1]],match[1]);
   }
 });
-test('language selection handles system regions, Norwegian aliases, saved choice and English fallback',()=>{
-  assert.equal(resolveLanguage(null,['xx','de-AT','fr']), 'de');
+test('first launch always uses English regardless of system languages',()=>{
+  for(const preferred of [['nb-NO'],['de-DE'],['nn-NO'],['fr-FR']]){
+    for(const saved of [null,undefined,'','bad','DE',{},42])assert.equal(resolveLanguage(saved,preferred),'en');
+    for(const saved of ['nb','de'])assert.equal(resolveLanguage(saved,preferred),saved);
+  }
   assert.equal(resolveLanguage('es',['de-DE']),'es');
-  assert.equal(resolveLanguage('bad',['nn-NO']),'nb');
-  assert.equal(resolveLanguage(null,['no-NO']),'nb');
+  assert.equal(resolveLanguage('bad',['nn-NO']),'en');
+  assert.equal(resolveLanguage(null,['no-NO']),'en');
   assert.equal(resolveLanguage(null,['ja-JP']),'en');
   assert.equal(translator('xx')('projects'),'Projects');
   const saved=catalogs.fr.projects;delete catalogs.fr.projects;
   try{assert.equal(translator('fr')('projects'),'Projects');}finally{catalogs.fr.projects=saved;}
   assert.equal(translator('es')('removeNamed',{name:'$& {n} <test>'}),'Quitar $& {n} <test> de TI');
 });
-test('desktop preference persists across instances; invalid settings use system fallback',t=>{
+test('desktop preference persists across instances; missing or invalid settings use English without writes',t=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'ti-language-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
   const filename=path.join(root,'settings','language.json'),settings=new LanguageSettings(filename,['sv-SE']);
-  assert.equal(settings.get(),'sv');settings.set('de');assert.equal(new LanguageSettings(filename,['fr']).get(),'de');
+  assert.equal(settings.get(),'en');assert.equal(fs.existsSync(filename),false);
+  for(const code of ['nb','de']){settings.set(code);assert.equal(new LanguageSettings(filename,['fr']).get(),code);}
   assert.throws(()=>settings.set('bad'));assert.equal(settings.get(),'de');
-  fs.writeFileSync(filename,'invalid');assert.equal(settings.get(),'sv');
+  for(const value of ['invalid','{}','{"language":"bad"}']){fs.writeFileSync(filename,value);assert.equal(settings.get(),'en');assert.equal(fs.readFileSync(filename,'utf8'),value);}
 });
 test('web preference persists and unavailable browser storage is handled',()=>{
   const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
-  assert.equal(loadBrowserLanguage(storage,['da-DK']),'da');assert.equal(saveBrowserLanguage(storage,'es'),true);
-  assert.equal(loadBrowserLanguage(storage,['da']),'es');
+  for(const preferred of [['nb-NO'],['de-DE']])assert.equal(loadBrowserLanguage(storage,preferred),'en');
+  assert.equal(map.size,0);
+  for(const code of ['nb','de']){assert.equal(saveBrowserLanguage(storage,code),true);assert.equal(loadBrowserLanguage(storage,['da']),code);}
+  map.set('ti.language','bad');assert.equal(loadBrowserLanguage(storage,['nb-NO']),'en');
   const denied={getItem(){throw new Error();},setItem(){throw new Error();}};
-  assert.equal(loadBrowserLanguage(denied,['fr-FR']),'fr');assert.equal(saveBrowserLanguage(denied,'de'),false);
+  assert.equal(loadBrowserLanguage(denied,['fr-FR']),'en');assert.equal(saveBrowserLanguage(denied,'de'),false);
 });
 test('language changes number/date formatting without changing accounting days',()=>{
   const stamp=Date.parse('2026-09-24T22:30:00Z');
