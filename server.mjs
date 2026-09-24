@@ -48,7 +48,7 @@ const server = http.createServer((req,res)=>{
     fallbackLimits: accountState.limitsUpdatedAt ? [] : logLimits(snapshot?.latestLimit),
     intervals: {local:10,account:60}, startedAt
   });
-  const files = {'/':'index.html','/app.js':'app.js','/detail-view.js':'detail-view.js','/style.css':'style.css'};
+  const files = {'/':'index.html','/app.js':'app.js','/detail-view.js':'detail-view.js','/i18n.js':'i18n.js','/translations.js':'translations.js','/style.css':'style.css'};
   if (!files[url.pathname]) return send(res,404,{error:'Ikke funnet.'});
   const types = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8'};
   send(res,200,fs.readFileSync(path.join(root,'public',files[url.pathname])),types[path.extname(files[url.pathname])]);

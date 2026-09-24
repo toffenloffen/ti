@@ -14,7 +14,7 @@ test('local server serves UI, rejects writes, and imports new logs without manua
   let response;
   for(let i=0;i<30;i++){try{response=await fetch(url+'/api/health');if(response.ok)break;}catch{}await delay(100);}
   assert.equal((await response.json()).app,'token-info');
-  assert.match(await (await fetch(url)).text(),/Hvor går tokenene/);
+  assert.match(await (await fetch(url)).text(),/Where do your tokens go/);
   assert.equal((await fetch(url+'/api/usage',{method:'POST'})).status,405);
   assert.equal((await fetch(url+'/README.md')).status,404);
   let data=await (await fetch(url+'/api/usage')).json();assert.equal(data.local.responses,0);

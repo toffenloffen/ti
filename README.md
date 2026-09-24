@@ -1,54 +1,85 @@
-# Token info
+# TI · Token info
 
-Et norsk skrivebordsprogram som følger Codex-bruken automatisk. Eget Windows-vindu med ikon, uten adresselinje, nettleserfane eller konsoll.
+A Windows desktop app that shows where your Codex tokens go. TI updates automatically and breaks down local usage by project, conversation and model, alongside the account figures reported by Codex.
 
-## Nedlastbar Windows-release
+**[Download the latest Windows release](https://github.com/toffenloffen/ti/releases/latest)**
 
-Last ned `Token-info-1.2.0-win-x64.zip` fra GitHub Releases, pakk ut hele arkivet og åpne **Token info.exe**. Du trenger ikke Node eller npm. Den valgfrie filen **Lag skrivebordssnarvei.vbs** oppretter en snarvei til den utpakkede appen. Behold mappen etterpå. Programfilen er ikke kodesignert. Dette er et uavhengig prosjekt, ikke et offisielt OpenAI-produkt.
+TI is an independent project, not an official OpenAI product. It currently reads **Codex data only**. Claude CLI logs are not supported.
 
-Bygg lokalt med `powershell -NoProfile -ExecutionPolicy Bypass -File Build-Release.ps1`. Bygget kontrollerer Electron med en fast SHA-256-verdi, pakker bare eksplisitt valgte appfiler og legger ZIP + kontrollsum i `dist/`. Personlige logger, innlogging og testdata pakkes ikke. GitHub Actions kjører tester og lager en releasekladd når en versjonstag som `v1.2.0` pushes.
+## Get started
 
-## Start og stopp
+1. Download `Token-info-1.3.0-win-x64.zip` from Releases.
+2. Extract the **entire** archive into a folder you want to keep.
+3. Open **Token info.exe**. No separate Node, npm or API key is needed.
+4. Optionally run **Create desktop shortcut.vbs** to create a desktop shortcut.
 
-Dobbeltklikk **Token info** på Windows-skrivebordet. Snarveien starter appen direkte. Du kan også bruke **Start Token info.cmd** i prosjektmappen. Gjentatt oppstart viser det eksisterende vinduet i stedet for flere kopier.
+Requires Windows x64. Codex must be installed and signed in to show account data. Local history works offline; account figures require a connection. The executable is unsigned, so Windows may display a warning. Each release includes `SHA256SUMS.txt` for verifying the download.
 
-Lukk med **X** for å avslutte appen og kontoforbindelsen. Minimer for å la overvåkingen fortsette. Ved neste oppstart leses historikken på nytt, også aktivitet som skjedde mens appen var lukket. Programmet starter ikke automatisk ved Windows-pålogging.
+To upgrade, close the old app and extract the new version into a new folder. Run the new shortcut script to update the shortcut. Your saved folders, language and window settings are retained.
 
-Skrivebordsskallet inkluderer Node gjennom Electron 44.3.0. Electron ligger i `.runtime/electron`, hentet fra prosjektets offisielle GitHub-utgivelse og kontrollert med SHA-256. Kjør `Install-Desktop.ps1` for å gjenopprette runtime/snarvei ved behov. Codex må være installert og innlogget for kontodata. Ingen separat API-nøkkel er nødvendig, og programmet starter ingen modellforespørsler. Prosjektmappen må beholdes siden skrivebordssnarveien peker hit.
+Closing the window exits TI and its Codex connection. Minimize it to keep monitoring. Reopening reads the available history again, including activity recorded while TI was closed. Opening TI a second time focuses the existing window. It does not start automatically with Windows.
 
-## Egne prosjektmapper
+## Languages
 
-Klikk **Legg til prosjektmappe** under Prosjekter i skrivebordsappen. Velg en mappe du har brukt med Codex CLI. TI grupperer eksisterende lokale Codex-logger fra mappen, undermappene og tilknyttede Git-worktrees, og følger automatisk med på nye logger. Mapper uten bruksdata vises også. Det er ikke nødvendig å registrere prosjektet i Codex først.
+Choose a language from the selector at the top of the app:
 
-Valgene lagres bare i `%APPDATA%/Token info/projects.json`; Codex-metadata og prosjektfiler endres ikke. **Administrer egne mapper → Fjern fra TI** fjerner bare TI-valget. Historikken fordeles da tilbake til Codex-prosjekter eller Nylige. Ved overlapp vinner den mest spesifikke mappen, mens eksplisitt Codex-prosjekttilknytning har prioritet. Den samme rotmappen vises én gang hvis den finnes begge steder. Et bevisst mappevalg i TI kan samle samtaler som Codex har merket prosjektløse.
+- English
+- Norwegian Bokmål
+- Swedish
+- Danish
+- German
+- French
+- Spanish
 
-**Datakilde:** Dette gjelder Codex-logger på denne PC-en, ikke filer inne i den valgte prosjektmappen. Claude CLI-logger importeres ikke ennå. Claude Code lagrer [egne JSONL-transkripter](https://code.claude.com/docs/en/sessions), og har [separate cache-felt som må legges til input](https://platform.claude.com/docs/en/build-with-claude/prompt-caching). Det krever en egen importør med deduplisering og validering av sesjoner/underagenter. Manuelle mapper løser dermed Codex-delen av [forespørsel #1](https://github.com/toffenloffen/ti/issues/1), ikke hele forespørselen.
+On first launch, TI uses a supported system language, falling back to English. Your selection is saved in `%APPDATA%/Token info/language.json` and applies immediately to the dashboard, model details, folder controls and app-provided dialog text. Standard Windows file-picker controls follow Windows settings.
 
-Mappevalg er tilgjengelig i Windows-appen. Utviklingsserveren i nettleseren beholder kun lesetilgang.
+Dates and numbers follow the selected language. **Changing the language does not change the accounting time zone or move usage between days.** Local days use `Europe/Oslo` by default, configurable with `TOKEN_INFO_TIMEZONE`. Project names, conversation titles, model names and exact model IDs are preserved.
 
-## Hva tallene betyr
+## Projects and custom folders
 
-- **Tokens i dag:** Registrert input + output i lokale Codex-logger, gruppert etter `Europe/Oslo`. Input fra hurtigbuffer og resonnering er underkategorier og legges ikke til totalen igjen.
-- **Kontohistorikk og kontototal:** Hentes fra Codex-tjenesten. Historikken kan ligge etter, og manglende dager vises som «ikke rapportert». Kontoens dagstidssone er ikke dokumentert i responsen. Kontohistorikk blandes ikke med lokale dagstall.
-- **Prosjekter:** Registrerte Codex-prosjekter fra lokale metadata og mapper brukeren eksplisitt har valgt i TI. Bruk knyttes til et registrert prosjekt via eksplisitt oppgavetilknytning, registrert rotmappe eller Git-worktree-metadata. Eksplisitt prosjektløse oppgaver blir bare gruppert som prosjekt når de matcher en mappe valgt i TI. Registrerte prosjekter uten lokale bruksdata vises med «Ingen lokale bruksdata ennå». Listen viser alle, med søk og scrolling.
-- **Nylige:** Samtaler uten registrert prosjekt, med tittel fra Codex sin lokale oppgaveindeks der den finnes. Underagenter samles med hovedoppgaven. Prosjekter + Nylige summerer til den samme lokale totalen. Ukjente mappenavn blir aldri egne prosjekter.
-- **Modeller:** Modellfordeling fra logger på denne PC-en. Flyttede/slettede logger, eldre aktivitet og andre PC-er kan mangle.
-- **Kontogrenser:** Hentes som prosent og nullstillingstidspunkt fra kontoen. Prosent omregnes aldri til tokens. Ved forbindelsesfeil beholdes sist kjente verdier med tidsstempel og varsel. Har programmet aldri hentet kontogrenser, kan det vise siste loggførte kvote, tydelig merket som historisk.
+Registered Codex projects appear automatically. Use **Add project folder** to include a folder used with Codex CLI even if it is not registered in the Codex app. Existing and new local Codex logs are grouped by that folder, its subdirectories and associated Git worktrees. Empty projects are shown too.
 
-Lokale data leses hvert 10. sekund, kontodata hvert minutt, og skjermen følger med hvert 5. sekund. Bare endrede loggfiler parses på nytt. Det leses fra `CODEX_HOME` eller `%USERPROFILE%\.codex`, inkludert `sessions` og `archived_sessions`. Samtaletekst sendes ikke til nettleseren eller noen ekstern tjeneste. Programmet leser ikke `auth.json` selv; innlogging håndteres av Codex.
+Selections are stored in `%APPDATA%/Token info/projects.json`. **Manage custom folders → Remove from TI** removes only the selection, leaving your files and logs untouched. History is regrouped under other matching projects or **Recent**.
 
-Lokale loggformater er interne og kan endres. Moderne `token_usage_record` telles med unik response-ID, slik at kopiert historikk ikke dobbelttelles. Speilede `token_count`-hendelser ignoreres i filer med moderne tokenposter. Eldre filer uten moderne poster bruker differanser i kumulative tellere og merkes med begrensninger. En blanding av gammel og ny logging i samme fil kan gi ufullstendig eldre historikk. Modellnavn følger loggens `turn_context` hvis tokenposten ikke har modellnavn.
+Explicit Codex project assignments take priority. Otherwise the most specific matching folder wins. A folder registered in both Codex and TI appears once. A deliberate TI selection can group conversations marked as projectless in Codex; unrelated conversations remain under Recent. Subagent usage is grouped with its parent task when the logs provide that relationship, without counting responses twice.
 
-## Integrasjon og utvikling
+Folder selection is available in the Windows app. The development web server remains read-only. Choosing a folder does not scan its source files for tokens: TI reads Codex usage logs stored on this PC.
 
-Klikk på et prosjekt eller en samtale under **Nylige** for å se modellrutene. Hver rute viser eksakt modell-ID, navn fra lokal modellkatalog når tilgjengelig, input uten cache, gjenbrukt input, output, total, responstall og periode. Totalsummen under rutene er summen av alle modellene, også ukjent modell. Oppgavedelene viser hovedoppgaver og underagenter med egen modellrekkefølge; dette er en annen inndeling av samme forbruk og legges ikke til totalen igjen.
+## Understanding the figures
 
-Historisk modell kobles først fra responsens eget modellfelt, deretter via samme `turn_id` i `turn_context`. Hvis responsen har en tur-ID uten match, er modellen ukjent. Eldre poster uten tur-ID kan bruke foregående kontekst, tydelig merket som mindre sikkert. Antall kall kan ikke utledes sikkert fra eldre kumulative tellerhendelser, så disse telles separat. Modeller fra nåværende konfigurasjon brukes aldri til å fylle historiske hull. Tidslinjen grupperer sammenhengende modellbruk per oppgave, slik at parallelle underagenter ikke ser ut som modellbytter i hovedoppgaven.
+- **Tokens today:** recorded input + output in local Codex logs. Cached input is already included in input; reasoning is already included in output. Neither is added a second time.
+- **Account total and history:** figures returned by Codex. Daily history may lag behind. Missing days mean “not reported”, not zero. The source does not specify the time zone of account-day buckets. Account history is kept separate from local daily totals.
+- **Projects, Recent and models:** local records from this PC. Deleted or moved logs, older activity and other devices may be missing. Projects + Recent sum to the local total.
+- **Account limits:** remaining percentages and reset times reported by the account. They are not token balances and are never converted to tokens. Connection failures retain the last values with timestamps. A limit from a local log is marked as historical; expired limits are not presented as current.
 
-Andeler i oversikten har hele det lokale tokenforbruket, alle registrerte dager, som nevner. Søk endrer ikke nevneren. Inne i modellrutene er nevneren det valgte prosjektets eller samtalens lokale total i den viste perioden. Disse prosentene er aldri kontokvote. Åpne detaljer oppdateres automatisk mens appen går.
+Overview percentages use the total local token usage across all recorded days, regardless of search filters. Model cards use the selected conversation or project's total for the displayed period. These shares are not account quotas.
 
-Offisiell kilde: [Codex App Server](https://learn.chatgpt.com/docs/app-server). Programmet starter en lokal `codex app-server --listen stdio://`, fullfører `initialize` / `initialized` og bruker bare `account/rateLimits/read` og `account/usage/read`. Ingen kjøp, nullstilling, meldinger eller inferenskall utføres. Kontointegrasjonen krever nett; lokal oversikt fungerer uten nett.
+Click a project or conversation to see model totals, uncached input, cached input, output, response counts, time ranges and metadata sources. Task sections show the same usage grouped by main task and subagent; they are not additional usage. Parallel tasks have separate model timelines.
 
-Utvikling: `node server.mjs` tilbyr fortsatt nettleservisning på `http://127.0.0.1:43117`; Ctrl+C stopper utviklingsserveren. Skrivebordsappen bruker samme datatjeneste inne i sin egen prosess på en automatisk valgt loopback-port. Ingen separat bakgrunnsserver må administreres. Test: `node --test` (Node 20+). Appens renderer er sandboxed uten Node-tilgang; kontodata leses av hovedprosessen. Vindusstørrelse huskes i `%APPDATA%/Token info/window.json`.
+Historical model attribution prioritizes the response's own model field, then historical `turn_context` with the same `turn_id`. A missing match remains unknown. Older records without a turn ID may use previous log context, explicitly marked as less certain. The current model selection never fills gaps in historical data.
 
-Valgfrie miljøvariabler: `TOKEN_INFO_PORT`, `TOKEN_INFO_CODEX` (sti til codex.exe), `TOKEN_INFO_TIMEZONE` og `CODEX_HOME`. Standard tidssone er Oslo. Skjermens tidsstempler vises i Oslo-tid. Det gjøres ingen endringer i Codex sine data. Ingen data publiseres. Oppstartslogger ligger i `.runtime`, som ignoreres av Git.
+## Data, privacy and limitations
+
+TI reads `sessions` and `archived_sessions` under `CODEX_HOME` or `%USERPROFILE%/.codex`, plus local project metadata, conversation titles and the model catalog. It does not modify Codex data. Conversation content is not sent to the renderer or an external service. TI does not read `auth.json` itself; authentication is handled by Codex.
+
+Local files are checked every 10 seconds, account data every minute and the display every 5 seconds. Only changed logs are parsed again. Monitoring does not send model prompts or consume inference tokens, buy credits or reset account allowances.
+
+The local log formats are internal and may change. Modern per-response records are deduplicated by response ID; mirrored cumulative events are ignored. Older logs use differences between cumulative counters and may be less precise around resets and branches. Mixed old/new logging in one file may omit older history. Older counter events cannot provide a reliable response count.
+
+Claude CLI support remains a separate future feature. It requires a dedicated importer, response deduplication and normalization of its different cache-token fields. It is not included simply by selecting a Claude project folder.
+
+## Development
+
+Node 20+ is required for development. Run `node --test` for the test suite. Run `node server.mjs` for the read-only web dashboard at `http://127.0.0.1:43117`; stop with Ctrl+C. The web language preference is stored in the browser and is separate from the desktop setting.
+
+The desktop shell uses Electron 44.3.0 with sandboxing, context isolation and no renderer Node access. `Install-Desktop.ps1` downloads and verifies Electron and creates a shortcut for a source checkout. The desktop app embeds its local data service on an automatically selected loopback port. Window settings are stored in `%APPDATA%/Token info/window.json`.
+
+Account integration starts a local `codex app-server --listen stdio://`, completes initialization and reads `account/rateLimits/read` and `account/usage/read`. See [Codex App Server](https://learn.chatgpt.com/docs/app-server).
+
+Optional environment variables: `CODEX_HOME`, `TOKEN_INFO_CODEX` (path to codex.exe), `TOKEN_INFO_TIMEZONE` and `TOKEN_INFO_PORT` (development web server).
+
+Translations live in `public/translations.js`; `public/i18n.js` provides language resolution, interpolation and formatting. Tests check complete key sets, matching placeholders, English fallback, persistence, date boundaries, HTML escaping and localized detail views.
+
+After building, run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Test-Desktop.ps1` for the isolated Electron UI checks. They exercise all languages, account/error views and persistence, and save test screenshots under `.runtime/locale-qa/`. They do not read your real Codex data.
+
+Build a Windows package with `powershell -NoProfile -ExecutionPolicy Bypass -File Build-Release.ps1`. The build verifies a pinned Electron SHA-256, includes only explicitly selected app files and writes a ZIP and checksum to `dist/`. It never bundles local logs, credentials or QA data. GitHub Actions runs Windows tests and creates a release draft for a matching version tag. `.runtime/` and `dist/` are ignored by Git.

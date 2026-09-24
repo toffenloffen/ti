@@ -111,7 +111,7 @@ export class LocalUsage {
     try {for(const m of JSON.parse(fs.readFileSync(path.join(this.home,'models_cache.json'),'utf8')).models||[])if(m.slug&&m.display_name)labels.set(m.slug,m.display_name);}catch{}
     const detailData=new UsageDetails(labels);
     const seen = new Set(), days = new Map(), projects = new Map(), models = new Map(), recent = new Map(), assignments = new Map();
-    for (const p of allProjects) projects.set(p.id,{id:p.id,name:p.name || 'Uten prosjektnavn',path:(p.rootPaths||[])[0] || '',custom:p.custom,hasData:false,...empty()});
+    for (const p of allProjects) projects.set(p.id,{id:p.id,name:p.name || 'Uten prosjektnavn',nameKey:p.name?null:'unnamedProject',path:(p.rootPaths||[])[0] || '',custom:p.custom,hasData:false,...empty()});
     const rootTask = meta => {
       const visited = new Set();
       while (meta.parent_thread_id && metas.has(meta.parent_thread_id) && !visited.has(meta.id)) { visited.add(meta.id);meta=metas.get(meta.parent_thread_id); }
@@ -137,13 +137,14 @@ export class LocalUsage {
           group = projects.get(project.id);group.hasData = true;
         } else {
           const id = task.id || e.thread || 'unknown';
-          if (!recent.has(id)) recent.set(id,{id,name:titles.get(id)||task.title||'Samtale uten tittel',hasData:true,lastActivity:e.time,...empty()});
+          if (!recent.has(id)) recent.set(id,{id,name:titles.get(id)||task.title||'Samtale uten tittel',nameKey:titles.get(id)||task.title?null:'untitled',hasData:true,lastActivity:e.time,...empty()});
           group = recent.get(id);group.lastActivity = Math.max(group.lastActivity,e.time);
         }
-        if (!models.has(e.model)) models.set(e.model, { id:e.model, name:labels.get(e.model)||e.model, ...empty() });
+        if (!models.has(e.model)) models.set(e.model, { id:e.model, name:labels.get(e.model)||e.model, nameKey:e.model==='Ukjent modell'?'unknownModel':null, ...empty() });
         detailData.record(`${project?'project':'recent'}:${group.id}`,e,{
           id:e.thread||ownTask.id||'unknown',
           name:titles.get(e.thread)||ownTask.title||(ownTask.parent_thread_id?`Underagent${ownTask.agent_nickname?' · '+ownTask.agent_nickname:''}`:'Samtale uten tittel'),
+          nameKey:titles.get(e.thread)||ownTask.title?null:ownTask.parent_thread_id?'subagent':'untitled',nickname:ownTask.parent_thread_id?ownTask.agent_nickname:null,
           role:ownTask.parent_thread_id?'Underagent':'Hovedoppgave',parentId:ownTask.parent_thread_id||null,
           parentName:titles.get(ownTask.parent_thread_id)||null
         });

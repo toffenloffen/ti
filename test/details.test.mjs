@@ -54,7 +54,7 @@ test('projectless detail has same models and total after reclassification; title
  fs.writeFileSync(path.join(home,'.codex-global-state.json'),'{}');
  const result=scan.scan();assert.equal(result.projects.length,0);assert.equal(result.recent.length,1);
  assert.equal(result.total.total_tokens,before);assert.equal(result.recent[0].details.calls,5);
- const html=detailHTML({...result.recent[0],name:'<unsafe>'});
+ const html=detailHTML({...result.recent[0],name:'<unsafe>'},'Europe/Oslo','nb');
  assert.match(html,/Model A/);assert.match(html,/Modell-ID mangler/);assert.match(html,/Samlet for &lt;unsafe&gt;/);
  assert.match(html,/550 tokens/);assert.doesNotMatch(html,/<unsafe>/);
  assert.equal((html.match(/class="model-card"/g)||[]).length,3);
