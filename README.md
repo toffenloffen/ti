@@ -4,9 +4,9 @@ Et norsk skrivebordsprogram som følger Codex-bruken automatisk. Eget Windows-vi
 
 ## Nedlastbar Windows-release
 
-Last ned `Token-info-1.1.0-win-x64.zip` fra GitHub Releases, pakk ut hele arkivet og åpne **Token info.exe**. Du trenger ikke Node eller npm. Den valgfrie filen **Lag skrivebordssnarvei.vbs** oppretter en snarvei til den utpakkede appen. Behold mappen etterpå. Programfilen er ikke kodesignert. Dette er et uavhengig prosjekt, ikke et offisielt OpenAI-produkt.
+Last ned `Token-info-1.2.0-win-x64.zip` fra GitHub Releases, pakk ut hele arkivet og åpne **Token info.exe**. Du trenger ikke Node eller npm. Den valgfrie filen **Lag skrivebordssnarvei.vbs** oppretter en snarvei til den utpakkede appen. Behold mappen etterpå. Programfilen er ikke kodesignert. Dette er et uavhengig prosjekt, ikke et offisielt OpenAI-produkt.
 
-Bygg lokalt med `powershell -NoProfile -ExecutionPolicy Bypass -File Build-Release.ps1`. Bygget kontrollerer Electron med en fast SHA-256-verdi, pakker bare eksplisitt valgte appfiler og legger ZIP + kontrollsum i `dist/`. Personlige logger, innlogging og testdata pakkes ikke. GitHub Actions kjører tester og lager en releasekladd når en versjonstag som `v1.1.0` pushes.
+Bygg lokalt med `powershell -NoProfile -ExecutionPolicy Bypass -File Build-Release.ps1`. Bygget kontrollerer Electron med en fast SHA-256-verdi, pakker bare eksplisitt valgte appfiler og legger ZIP + kontrollsum i `dist/`. Personlige logger, innlogging og testdata pakkes ikke. GitHub Actions kjører tester og lager en releasekladd når en versjonstag som `v1.2.0` pushes.
 
 ## Start og stopp
 
@@ -16,7 +16,7 @@ Lukk med **X** for å avslutte appen og kontoforbindelsen. Minimer for å la ove
 
 Skrivebordsskallet inkluderer Node gjennom Electron 44.3.0. Electron ligger i `.runtime/electron`, hentet fra prosjektets offisielle GitHub-utgivelse og kontrollert med SHA-256. Kjør `Install-Desktop.ps1` for å gjenopprette runtime/snarvei ved behov. Codex må være installert og innlogget for kontodata. Ingen separat API-nøkkel er nødvendig, og programmet starter ingen modellforespørsler. Prosjektmappen må beholdes siden skrivebordssnarveien peker hit.
 
-## Egne prosjektmapper (kommende oppdatering)
+## Egne prosjektmapper
 
 Klikk **Legg til prosjektmappe** under Prosjekter i skrivebordsappen. Velg en mappe du har brukt med Codex CLI. TI grupperer eksisterende lokale Codex-logger fra mappen, undermappene og tilknyttede Git-worktrees, og følger automatisk med på nye logger. Mapper uten bruksdata vises også. Det er ikke nødvendig å registrere prosjektet i Codex først.
 
