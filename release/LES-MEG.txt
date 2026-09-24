@@ -1,4 +1,4 @@
-Token info 1.1.0 - Windows x64
+Token info 1.2.0 - Windows x64
 
 1. Pakk ut hele ZIP-filen til en mappe du vil beholde.
 2. Dobbeltklikk Token info.exe.

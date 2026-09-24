@@ -1,11 +1,13 @@
-Token info viser Codex-bruk i et eget norsk Windows-program.
+TI 1.2.0 adds manually selected project folders for local Codex usage.
 
-- Automatisk oppdatering av lokale tokens, kontohistorikk og kontogrenser.
-- Prosjekter og samtaler med søk og modellfordeling.
-- Detaljer for hovedoppgaver, underagenter og historiske modellbytter.
+- Choose **Legg til prosjektmappe** in the Windows app to add a folder used with Codex CLI, without registering it in the Codex app.
+- TI remembers your folders, updates usage automatically and lets you remove a folder from TI without deleting files or logs.
+- Existing history is regrouped immediately, including associated worktrees and subagents, without double-counting tokens. Explicit Codex assignments take priority; overlapping folders use the most specific match.
 
-Last ned **Token-info-1.1.0-win-x64.zip**, pakk ut hele arkivet og start **Token info.exe**. Du kan lage en skrivebordssnarvei med den medfølgende filen. Ingen separat installasjon av Node er nødvendig.
+**Claude CLI logs are not supported yet.** This release addresses the Codex folder-selection part of [issue #1](https://github.com/toffenloffen/ti/issues/1); Claude import remains a separate future improvement.
 
-Krever Windows x64 og installert, innlogget Codex for kontodata. Appen er ikke kodesignert. SHA-256-kontrollsum følger med som `SHA256SUMS.txt`.
+Download **Token-info-1.2.0-win-x64.zip**, extract the entire archive, then open **Token info.exe**. When upgrading, close the old app first and extract the new version into a new folder. Run the included shortcut script to point your desktop shortcut at the new version. Saved TI folders and window settings are retained.
 
-Lokale tokenlogger dekker denne PC-en. Kontohistorikk kan ligge etter, og tokenmengde er ikke det samme som kontokvote. Interne Codex-loggformater kan endres. Ingen brukerdata følger med nedlastingen. Uavhengig prosjekt; ikke et offisielt OpenAI-produkt.
+Requires Windows x64. Codex must be installed and signed in for account data. No separate Node installation or API key is needed. The executable is unsigned; Windows may show a warning. SHA256SUMS.txt is included. No personal logs or credentials are bundled.
+
+Validation: 22 automated tests plus native Windows folder-selection and restart checks. Local token totals cover this PC and are separate from account quotas. Independent project, not an official OpenAI product.

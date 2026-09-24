@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { UsageDetails } from './details.mjs';
+import { folderKey } from './custom-projects.mjs';
 
 const fields = ['input_tokens', 'cached_input_tokens', 'output_tokens', 'reasoning_output_tokens', 'total_tokens'];
 const empty = () => Object.fromEntries(fields.map(k => [k, 0]));
@@ -56,7 +57,7 @@ export function parseLog(text, filename = '') {
   const events = modern.length ? modern : legacy;
   return { meta: meta || {}, events, lastLimit, badLines, legacy: !modern.length && !!legacy.length };
 }
-const normalize = s => String(s || '').replaceAll('\\', '/').replace(/\/$/, '').toLowerCase();
+const normalize = folderKey;
 function worktreeRoot(cwd) {
   // Git's own worktree metadata links a checkout back to its registered repository.
   try {
@@ -68,21 +69,23 @@ function worktreeRoot(cwd) {
     return path.basename(commonDir) === '.git' ? path.dirname(commonDir) : null;
   } catch { return null; }
 }
-function projectFor(meta, thread, state) {
-  const projects = Object.values(state['local-projects'] || {});
+function projectFor(meta, thread, state, projects) {
   const assignment = state['thread-project-assignments']?.[thread];
   const assigned = projects.find(p => p.id === assignment?.projectId);
   const projectless = state['projectless-thread-ids'] || [];
-  if (!assigned && (Array.isArray(projectless) ? projectless.includes(thread) : projectless[thread])) return null;
+  const isProjectless = Array.isArray(projectless) ? projectless.includes(thread) : projectless[thread];
   const cwd = meta.cwd || '';
   const worktree = worktreeRoot(cwd);
-  const matched = assigned || projects.filter(p => (p.rootPaths || []).some(root => normalize(cwd) === normalize(root) || normalize(cwd).startsWith(normalize(root) + '/') || (worktree && normalize(worktree) === normalize(root)))).sort((a,b) => Math.max(...b.rootPaths.map(r=>r.length)) - Math.max(...a.rootPaths.map(r=>r.length)))[0];
+  const score = p => Math.max(-1, ...(isProjectless ? p.customRoots || [] : p.rootPaths || []).filter(root => normalize(cwd) === normalize(root) || normalize(cwd).startsWith(normalize(root) + '/') || (worktree && normalize(worktree) === normalize(root))).map(root => normalize(root).length));
+  // Explicit Codex assignments win. A folder deliberately selected in TI may
+  // group CLI/projectless sessions; ordinary Codex projects retain the old rule.
+  const matched = assigned || projects.filter(p => (!isProjectless || p.custom) && score(p) >= 0).sort((a,b) => score(b) - score(a))[0];
   if (matched) return { id: matched.id, name: matched.name || path.win32.basename(matched.rootPaths[0]), path: matched.rootPaths[0] };
   return null;
 }
 export class LocalUsage {
   constructor(home, timeZone = 'Europe/Oslo') { this.home = home; this.timeZone = timeZone; this.cache = new Map(); }
-  scan(now = Date.now()) {
+  scan(now = Date.now(), customProjects = []) {
     const warnings = [];
     const files = [...filesIn(path.join(this.home, 'sessions'), warnings), ...filesIn(path.join(this.home, 'archived_sessions'), warnings)];
     for (const cached of this.cache.keys()) if (!files.includes(cached)) this.cache.delete(cached);
@@ -94,6 +97,13 @@ export class LocalUsage {
     }
     let state = {};
     try { state = JSON.parse(fs.readFileSync(path.join(this.home, '.codex-global-state.json'), 'utf8')); } catch {}
+    const registered = Object.values(state['local-projects'] || {}).map(p => ({...p, custom:false}));
+    const allProjects = [...registered];
+    for (const p of customProjects) {
+      const existing = allProjects.find(r => (r.rootPaths || []).some(root => normalize(root) === normalize(p.path)));
+      if (existing) { existing.custom = true; existing.customRoots = [...existing.customRoots || [], p.path]; }
+      else allProjects.push({id:p.id, name:p.name, rootPaths:[p.path], customRoots:[p.path], custom:true});
+    }
     const metas = new Map([...this.cache.values()].map(f => [f.meta.id, f.meta]));
     const titles = new Map();
     try { for (const line of fs.readFileSync(path.join(this.home,'session_index.jsonl'),'utf8').split('\n')) { try { const t=JSON.parse(line); if(t.id&&t.thread_name)titles.set(t.id,t.thread_name); } catch {} } } catch {}
@@ -101,7 +111,7 @@ export class LocalUsage {
     try {for(const m of JSON.parse(fs.readFileSync(path.join(this.home,'models_cache.json'),'utf8')).models||[])if(m.slug&&m.display_name)labels.set(m.slug,m.display_name);}catch{}
     const detailData=new UsageDetails(labels);
     const seen = new Set(), days = new Map(), projects = new Map(), models = new Map(), recent = new Map(), assignments = new Map();
-    for (const p of Object.values(state['local-projects'] || {})) projects.set(p.id,{id:p.id,name:p.name || 'Uten prosjektnavn',path:(p.rootPaths||[])[0] || '',hasData:false,...empty()});
+    for (const p of allProjects) projects.set(p.id,{id:p.id,name:p.name || 'Uten prosjektnavn',path:(p.rootPaths||[])[0] || '',custom:p.custom,hasData:false,...empty()});
     const rootTask = meta => {
       const visited = new Set();
       while (meta.parent_thread_id && metas.has(meta.parent_thread_id) && !visited.has(meta.id)) { visited.add(meta.id);meta=metas.get(meta.parent_thread_id); }
@@ -118,7 +128,7 @@ export class LocalUsage {
         const day = dayKey(e.time, this.timeZone);
         const ownTask=metas.get(e.thread)||f.meta;
         const task = rootTask(ownTask);
-        if (!assignments.has(e.thread)) assignments.set(e.thread, projectFor(metas.get(e.thread) || f.meta,e.thread,state) || projectFor(task,task.id,state));
+        if (!assignments.has(e.thread)) assignments.set(e.thread, projectFor(metas.get(e.thread) || f.meta,e.thread,state,allProjects) || projectFor(task,task.id,state,allProjects));
         const project = assignments.get(e.thread);
         if (!days.has(day)) days.set(day, { date: day, ...empty() });
         let group;

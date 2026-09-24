@@ -21,7 +21,7 @@ Rename-Item -LiteralPath (Join-Path $bundle 'electron.exe') -NewName 'Token info
 $appDir = Join-Path $bundle 'resources\app'
 New-Item -ItemType Directory -Force -Path $appDir | Out-Null
 # Copy only application files; never package local Codex data, logs or QA fixtures.
-foreach ($name in @('package.json','desktop.cjs','server.mjs','account.mjs','usage.mjs','details.mjs','public','assets','README.md')) {
+foreach ($name in @('package.json','desktop.cjs','preload.cjs','custom-projects.mjs','server.mjs','account.mjs','usage.mjs','details.mjs','public','assets','README.md')) {
     Copy-Item -LiteralPath (Join-Path $appRoot $name) -Destination $appDir -Recurse
 }
 Copy-Item -LiteralPath (Join-Path $appRoot 'release\LES-MEG.txt') -Destination $bundle

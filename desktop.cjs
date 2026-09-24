@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, shell, session } = require('electron');
+const { app, BrowserWindow, Menu, dialog, shell, session, ipcMain } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
@@ -27,7 +27,9 @@ else {
     session.defaultSession.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false));
     session.defaultSession.setPermissionCheckHandler(()=>false);
     const {createService} = await import(pathToFileURL(path.join(__dirname,'server.mjs')).href);
-    service = createService({port:0});
+    const {CustomProjects} = await import(pathToFileURL(path.join(__dirname,'custom-projects.mjs')).href);
+    const customProjects = new CustomProjects(path.join(app.getPath('userData'),'projects.json'));
+    service = createService({port:0,getCustomProjects:()=>customProjects.list()});
     const origin = await service.start();
     let settings = {};
     try { settings = JSON.parse(fs.readFileSync(settingsFile,'utf8')); } catch {}
@@ -36,7 +38,28 @@ else {
       title:'Token info',width:clamp(settings.width,760,2400,1260),height:clamp(settings.height,580,1600,900),
       minWidth:760,minHeight:580,show:false,backgroundColor:'#f3f5f0',
       icon:path.join(__dirname,'assets','token-info.ico'),autoHideMenuBar:true,
-      webPreferences:{nodeIntegration:false,contextIsolation:true,sandbox:true,backgroundThrottling:false,spellcheck:false}
+      webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true,backgroundThrottling:false,spellcheck:false}
+    });
+    let selectingFolder = false;
+    const trusted = event => event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && new URL(event.senderFrame.url).origin === origin;
+    for (const action of ['list','add','remove']) ipcMain.handle(`ti-projects:${action}`,async(event,id)=>{
+      if (!trusted(event)) throw new Error('Ugyldig avsender.');
+      try {
+        if (action === 'add') {
+          if (selectingFolder) return {projects:customProjects.list()};
+          selectingFolder = true;
+          try {
+            const selection = await dialog.showOpenDialog(win,{title:'Legg til prosjektmappe i TI',properties:['openDirectory']});
+            if (!selection.canceled && selection.filePaths[0]) customProjects.add(selection.filePaths[0]);
+          } finally { selectingFolder = false; }
+        }
+        if (action === 'remove') {
+          if (typeof id !== 'string' || !id.startsWith('ti:')) throw new Error('Ugyldig prosjekt.');
+          customProjects.remove(id);
+        }
+        if (action !== 'list') service.refreshLocal();
+        return {projects:customProjects.list()};
+      } catch(error) { return {error:error.message}; }
     });
     win.on('page-title-updated',event=>{event.preventDefault();win.setTitle('Token info');});
     win.on('close',()=>{
