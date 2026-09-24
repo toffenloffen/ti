@@ -7,6 +7,7 @@ app.setAppUserModelId('no.local.tokeninfo');
 app.setPath('userData', path.join(app.getPath('appData'), 'Token info'));
 const locked = app.requestSingleInstanceLock();
 let win, service, quitting = false;
+let languageSettings, translate = key => ({startError:'Token info could not start',restart:'Please reopen Token info. Your data has been preserved.'})[key] || key;
 const settingsFile = path.join(app.getPath('userData'), 'window.json');
 function focusWindow() {
   if (!win || win.isDestroyed()) return;
@@ -23,6 +24,10 @@ else {
     Promise.resolve(service?.close()).finally(()=>app.quit());
   });
   app.whenReady().then(async()=>{
+    const {LanguageSettings} = await import(pathToFileURL(path.join(__dirname,'language-settings.mjs')).href);
+    const {translator} = await import(pathToFileURL(path.join(__dirname,'public','i18n.js')).href);
+    languageSettings = new LanguageSettings(path.join(app.getPath('userData'),'language.json'),app.getPreferredSystemLanguages());
+    translate = translator(languageSettings.get());
     Menu.setApplicationMenu(null);
     session.defaultSession.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false));
     session.defaultSession.setPermissionCheckHandler(()=>false);
@@ -42,6 +47,15 @@ else {
     });
     let selectingFolder = false;
     const trusted = event => event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && new URL(event.senderFrame.url).origin === origin;
+    ipcMain.handle('ti-language:get',event=>{
+      if (!trusted(event)) throw new Error('Invalid sender');
+      return languageSettings.get();
+    });
+    ipcMain.handle('ti-language:set',(event,language)=>{
+      if (!trusted(event)) throw new Error('Invalid sender');
+      try { languageSettings.set(language); translate=translator(language); return {language}; }
+      catch { return {error:'languageSaveError'}; }
+    });
     for (const action of ['list','add','remove']) ipcMain.handle(`ti-projects:${action}`,async(event,id)=>{
       if (!trusted(event)) throw new Error('Ugyldig avsender.');
       try {
@@ -49,7 +63,7 @@ else {
           if (selectingFolder) return {projects:customProjects.list()};
           selectingFolder = true;
           try {
-            const selection = await dialog.showOpenDialog(win,{title:'Legg til prosjektmappe i TI',properties:['openDirectory']});
+            const selection = await dialog.showOpenDialog(win,{title:translate('folderDialog'),buttonLabel:translate('selectFolder'),properties:['openDirectory']});
             if (!selection.canceled && selection.filePaths[0]) customProjects.add(selection.filePaths[0]);
           } finally { selectingFolder = false; }
         }
@@ -77,7 +91,7 @@ else {
     win.once('ready-to-show',()=>{if(settings.maximized)win.maximize();focusWindow();});
     await win.loadURL(origin);
   }).catch(error=>{
-    dialog.showErrorBox('Token info kunne ikke starte', `${error.message}\n\nPrøv å åpne Token info på nytt.`);
+    dialog.showErrorBox(translate('startError'), translate('restart'));
     app.quit();
   });
 }

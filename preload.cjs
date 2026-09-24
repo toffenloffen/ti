@@ -4,3 +4,7 @@ contextBridge.exposeInMainWorld('tiProjects', {
   add: () => ipcRenderer.invoke('ti-projects:add'),
   remove: id => ipcRenderer.invoke('ti-projects:remove', id)
 });
+contextBridge.exposeInMainWorld('tiLanguage', {
+  get: () => ipcRenderer.invoke('ti-language:get'),
+  set: language => ipcRenderer.invoke('ti-language:set', language)
+});

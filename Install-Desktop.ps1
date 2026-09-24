@@ -11,7 +11,7 @@ if (-not (Test-Path -LiteralPath $appExe)) {
     Invoke-WebRequest "https://github.com/electron/electron/releases/download/v$version/$zipName" -OutFile $zipPath
     $sums = (Invoke-WebRequest "https://github.com/electron/electron/releases/download/v$version/SHASUMS256.txt").Content
     $expected = (($sums -split "`n" | Where-Object { $_.TrimEnd().EndsWith("*$zipName") }) -split '\s+')[0]
-    if (-not $expected -or (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLower() -ne $expected) { throw 'Kontrollsummen for Electron stemmer ikke.' }
+    if (-not $expected -or (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLower() -ne $expected) { throw 'Electron checksum mismatch.' }
     Expand-Archive -LiteralPath $zipPath -DestinationPath (Join-Path $runtimeDir 'electron') -Force
 }
 $desktopPath = [Environment]::GetFolderPath('Desktop')
@@ -21,8 +21,8 @@ $shortcut = $shell.CreateShortcut($shortcutPath)
 $shortcut.TargetPath = $appExe
 $shortcut.Arguments = '"' + $appRoot + '"'
 $shortcut.WorkingDirectory = $appRoot
-$shortcut.Description = 'Din automatiske Codex-oversikt'
+$shortcut.Description = 'Your automatic Codex usage overview'
 $shortcut.IconLocation = (Join-Path $appRoot 'assets\token-info.ico') + ',0'
 $shortcut.WindowStyle = 1
 $shortcut.Save()
-Write-Output "Skrivebordsappen er klar: $shortcutPath"
+Write-Output "Desktop app ready: $shortcutPath"

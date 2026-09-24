@@ -23,6 +23,9 @@ jobs:
       - name: Package Windows app
         shell: pwsh
         run: ./Build-Release.ps1
+      - name: Verify desktop languages and persistence
+        shell: pwsh
+        run: ./scripts/Test-Desktop.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: token-info-windows
